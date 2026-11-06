@@ -145,16 +145,20 @@
   ],
   "rewrites": [
     {
+      "source": "/api/auth",
+      "destination": "/api/auth/[...path]"
+    },
+    {
       "source": "/api/auth/:path*",
       "destination": "/api/auth/[...path]"
     },
     {
-      "source": "/api/cms/:path*",
+      "source": "/api/cms",
       "destination": "/api/cms/[...path]"
     },
     {
-      "source": "/api/media/file/:path*",
-      "destination": "/api/media/file/[id]"
+      "source": "/api/cms/:path*",
+      "destination": "/api/cms/[...path]"
     },
     {
       "source": "/((?!api/|assets/|images/|favicon\\.ico|Favicon\\.png|Logo\\.png|robots\\.txt|sitemap\\.xml).*)",

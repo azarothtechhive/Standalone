@@ -1,12 +1,73 @@
 import * as authService from '../../src/server/services/authService';
 import { logger } from '../../src/server/core/logger';
 
-export async function handleAuthRequest(request: Request): Promise<Response> {
-  const url = new URL(request.url);
-  let path = url.pathname.replace(/^\/api\/auth/, '') || '/';
-  if (path.endsWith('.ts') || path.endsWith('.js')) {
-    path = path.replace(/\.(ts|js)$/, '');
+function getCorsHeaders(request: Request): Headers {
+  const origin = request.headers.get('origin') || '*';
+  const headers = new Headers();
+
+  const isAllowedOrigin =
+    origin === '*' ||
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1') ||
+    origin.includes('azaroth-techhive.com') ||
+    origin.includes('vercel.app');
+
+  if (isAllowedOrigin && origin !== '*') {
+    headers.set('Access-Control-Allow-Origin', origin);
+    headers.set('Access-Control-Allow-Credentials', 'true');
+  } else {
+    headers.set('Access-Control-Allow-Origin', '*');
   }
+
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cookie');
+  headers.set('Access-Control-Max-Age', '86400');
+  return headers;
+}
+
+export function resolveAuthPath(request: Request): string {
+  const url = new URL(request.url);
+
+  // 1. Check query parameter overrides (subpath or path) e.g. from Vercel rewrites
+  const subpath = url.searchParams.get('subpath') || url.searchParams.get('path');
+  if (subpath) {
+    const clean = subpath.startsWith('/') ? subpath : `/${subpath}`;
+    if (!clean.includes('[...')) {
+      return clean.replace(/\.(ts|js)$/, '').replace(/\/+$/, '') || '/';
+    }
+  }
+
+  // 2. Check matched path headers from Vercel / Cloudflare / reverse proxies
+  const matched =
+    request.headers.get('x-matched-path') ||
+    request.headers.get('x-invoke-path') ||
+    request.headers.get('x-forwarded-uri');
+  if (matched && matched.includes('/api/auth')) {
+    const fromHeader = matched.replace(/^.*?\/api\/auth/, '');
+    if (fromHeader && !fromHeader.includes('[...')) {
+      return fromHeader.replace(/\.(ts|js)$/, '').replace(/\/+$/, '') || '/';
+    }
+  }
+
+  // 3. Fallback to standard url.pathname
+  const fromPathname = url.pathname.replace(/^.*?\/api\/auth/, '');
+  if (fromPathname && !fromPathname.includes('[...')) {
+    return fromPathname.replace(/\.(ts|js)$/, '').replace(/\/+$/, '') || '/';
+  }
+
+  return '/';
+}
+
+export async function handleAuthRequest(request: Request): Promise<Response> {
+  // Handle CORS preflight requests
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: getCorsHeaders(request),
+    });
+  }
+
+  const path = resolveAuthPath(request);
   const method = request.method;
 
   try {
@@ -22,7 +83,7 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
     let cookieToken: string | null = null;
 
     if (authHeader.startsWith('Bearer ')) {
-      bearerToken = authHeader.slice('Bearer '.length).trim();
+      bearerToken = authHeader.slice('Bearer '.length).trim().replace(/^"(.*)"$/, '$1');
     }
 
     if (cookieHeader) {
@@ -30,26 +91,19 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
       for (const part of parts) {
         const [rawName, ...rest] = part.trim().split('=');
         if (rawName === 'azaroth_session' || rawName === 'session_token') {
-          cookieToken = decodeURIComponent(rest.join('='));
+          cookieToken = decodeURIComponent(rest.join('=')).trim().replace(/^"(.*)"$/, '$1');
           break;
         }
       }
     }
 
-    let token: string | null = null;
-    const tokenCandidates = [...new Set(
-      [cookieToken, bearerToken].filter(
-        (candidate): candidate is string => Boolean(candidate),
-      ),
-    )];
-    for (const candidate of tokenCandidates) {
-      if (await authService.getAuthenticatedAccount(candidate, true)) {
-        token = candidate;
-        break;
-      }
-    }
+    // Check bearer token first, fallback to cookie token
+    const token = bearerToken || cookieToken || null;
 
-    const ipAddress = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const ipAddress =
+      request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+      request.headers.get('cf-connecting-ip') ||
+      '127.0.0.1';
     const userAgent = request.headers.get('user-agent') || '';
 
     let result: any;
@@ -63,7 +117,7 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
       });
     } else if (path === '/logout' && method === 'POST') {
       if (!token) {
-        result = { success: false, message: 'No session token provided' };
+        result = { success: true, message: 'Logged out.' };
       } else {
         result = await authService.handleLogout(token);
       }
@@ -71,8 +125,7 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
       if (!token) {
         result = { success: false, message: 'Not authenticated' };
       } else {
-        // Allow unverified MFA so the user knows if MFA enrollment is required
-        const account = await authService.getAuthenticatedAccount(token, true);
+        const account = await authService.getAuthenticatedAccount(token);
         if (!account) {
           result = { success: false, message: 'Not authenticated' };
         } else {
@@ -82,9 +135,10 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
             user: {
               id: account.id,
               email: account.email,
-              name: (!account.name || account.name === 'Principal System Administrator')
-                ? (account.email ? account.email.split('@')[0] : 'admin')
-                : account.name,
+              name:
+                !account.name || account.name === 'Principal System Administrator'
+                  ? account.email ? account.email.split('@')[0] : 'admin'
+                  : account.name,
               role: account.role,
               twoFactorEnabled: false,
               mfaVerified: true,
@@ -146,10 +200,11 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
         result = await authService.updateProfile(token, body);
       }
     } else if (path === '/mfa/setup' && method === 'GET') {
+      // MFA is removed; return 401 if unauthenticated, else inform that MFA is disabled
       if (!token) {
         result = { success: false, message: 'Authentication required.' };
       } else {
-        result = await authService.generateTotpSetup(token);
+        result = { success: false, message: 'MFA is not enabled on this platform.' };
       }
     } else if (path === '/mfa/enable' && method === 'POST') {
       if (!token) {
@@ -167,17 +222,12 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
       if (!token) {
         result = { success: false, message: 'Authentication required.' };
       } else {
-        const account = await authService.getAccountFromSession(token);
-        if (!account) {
-          result = { success: false, message: 'Invalid session.' };
-        } else {
-          result = {
-            success: true,
-            twoFactorEnabled: false,
-            mfaVerified: true,
-            forceMfaEnrollment: false,
-          };
-        }
+        result = {
+          success: true,
+          twoFactorEnabled: false,
+          mfaVerified: true,
+          forceMfaEnrollment: false,
+        };
       }
     } else {
       result = {
@@ -202,18 +252,22 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
       statusCode,
     });
 
-    const responseHeaders = new Headers({ 'content-type': 'application/json' });
+    const responseHeaders = getCorsHeaders(request);
+    responseHeaders.set('content-type', 'application/json');
+
+    const isHttps =
+      new URL(request.url).protocol === 'https:' ||
+      request.headers.get('x-forwarded-proto') === 'https';
+
     if (path === '/login' && result.success && result.token) {
-      const secure = new URL(request.url).protocol === 'https:';
       responseHeaders.append(
         'set-cookie',
-        `azaroth_session=${encodeURIComponent(result.token)}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax${secure ? '; Secure' : ''}`
+        `azaroth_session=${encodeURIComponent(result.token)}; HttpOnly; Path=/; Max-Age=${7 * 24 * 60 * 60}; SameSite=Lax${isHttps ? '; Secure' : ''}`
       );
     } else if (path === '/logout' && method === 'POST') {
-      const secure = new URL(request.url).protocol === 'https:';
       responseHeaders.append(
         'set-cookie',
-        `azaroth_session=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax${secure ? '; Secure' : ''}`
+        `azaroth_session=; HttpOnly; Path=/; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${isHttps ? '; Secure' : ''}`
       );
     }
 
@@ -229,6 +283,9 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
       meta: { error: error instanceof Error ? error.message : 'Unknown error' },
     });
 
+    const errHeaders = getCorsHeaders(request);
+    errHeaders.set('content-type', 'application/json');
+
     return new Response(
       JSON.stringify({
         success: false,
@@ -236,7 +293,7 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
       }),
       {
         status: 500,
-        headers: { 'content-type': 'application/json' },
+        headers: errHeaders,
       }
     );
   }
@@ -245,8 +302,30 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
 export default async function handler(req: any, res?: any) {
   if (res && typeof res.status === 'function') {
     try {
-      const url = `${req.protocol || 'https'}://${req.headers?.host || 'localhost'}${req.url || '/api/auth'}`;
-      
+      const originalPath =
+        req.headers?.['x-matched-path'] ||
+        req.headers?.['x-invoke-path'] ||
+        req.headers?.['x-forwarded-uri'] ||
+        req.url ||
+        '/api/auth';
+      const host = req.headers?.['x-forwarded-host'] || req.headers?.host || 'localhost';
+      const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
+
+      let fullUrlPath = originalPath;
+      if (req.query && typeof req.query === 'object' && Object.keys(req.query).length > 0 && !fullUrlPath.includes('?')) {
+        const params = new URLSearchParams();
+        for (const [k, v] of Object.entries(req.query)) {
+          if (v !== undefined) {
+            params.set(k, Array.isArray(v) ? v.join(',') : String(v));
+          }
+        }
+        const qs = params.toString();
+        if (qs) {
+          fullUrlPath = `${fullUrlPath}?${qs}`;
+        }
+      }
+      const url = `${proto}://${host}${fullUrlPath}`;
+
       const headers = new Headers();
       if (req.headers && typeof req.headers === 'object') {
         for (const [key, value] of Object.entries(req.headers)) {

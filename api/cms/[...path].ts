@@ -5,12 +5,71 @@ import { productsCatalog } from '../../src/data/productsData';
 import { serviceOfferings } from '../../src/data/servicesData';
 import { SEED_INSIGHTS_ARTICLES } from '../../src/seed/seedData';
 
-export async function handleCmsRequest(request: Request): Promise<Response> {
-  const url = new URL(request.url);
-  let path = url.pathname.replace(/^\/api\/cms/, '') || '/';
-  if (path.endsWith('.ts') || path.endsWith('.js')) {
-    path = path.replace(/\.(ts|js)$/, '');
+function getCorsHeaders(request: Request): Headers {
+  const origin = request.headers.get('origin') || '*';
+  const headers = new Headers();
+
+  const isAllowedOrigin =
+    origin === '*' ||
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1') ||
+    origin.includes('azaroth-techhive.com') ||
+    origin.includes('vercel.app');
+
+  if (isAllowedOrigin && origin !== '*') {
+    headers.set('Access-Control-Allow-Origin', origin);
+    headers.set('Access-Control-Allow-Credentials', 'true');
+  } else {
+    headers.set('Access-Control-Allow-Origin', '*');
   }
+
+  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Cookie');
+  headers.set('Access-Control-Max-Age', '86400');
+  return headers;
+}
+
+export function resolveCmsPath(request: Request): string {
+  const url = new URL(request.url);
+
+  const subpath = url.searchParams.get('subpath') || url.searchParams.get('path');
+  if (subpath) {
+    const clean = subpath.startsWith('/') ? subpath : `/${subpath}`;
+    if (!clean.includes('[...')) {
+      return clean.replace(/\.(ts|js)$/, '').replace(/\/+$/, '') || '/';
+    }
+  }
+
+  const matched =
+    request.headers.get('x-matched-path') ||
+    request.headers.get('x-invoke-path') ||
+    request.headers.get('x-forwarded-uri');
+  if (matched && matched.includes('/api/cms')) {
+    const fromHeader = matched.replace(/^.*?\/api\/cms/, '');
+    if (fromHeader && !fromHeader.includes('[...')) {
+      return fromHeader.replace(/\.(ts|js)$/, '').replace(/\/+$/, '') || '/';
+    }
+  }
+
+  const fromPathname = url.pathname.replace(/^.*?\/api\/cms/, '');
+  if (fromPathname && !fromPathname.includes('[...')) {
+    return fromPathname.replace(/\.(ts|js)$/, '').replace(/\/+$/, '') || '/';
+  }
+
+  return '/';
+}
+
+export async function handleCmsRequest(request: Request): Promise<Response> {
+  // Handle CORS preflight
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: getCorsHeaders(request),
+    });
+  }
+
+  const url = new URL(request.url);
+  const path = resolveCmsPath(request);
   const method = request.method;
 
   try {
@@ -19,9 +78,11 @@ export async function handleCmsRequest(request: Request): Promise<Response> {
       try {
         body = await request.json();
       } catch {
+        const badReqHeaders = getCorsHeaders(request);
+        badReqHeaders.set('content-type', 'application/json');
         return new Response(JSON.stringify({ success: false, message: 'A valid JSON request body is required.' }), {
           status: 400,
-          headers: { 'content-type': 'application/json' },
+          headers: badReqHeaders,
         });
       }
     }
@@ -209,7 +270,7 @@ export async function handleCmsRequest(request: Request): Promise<Response> {
 
     const statusCode = result.success
       ? 200
-      : result.message === 'Authentication required.'
+      : result.message === 'Authentication required.' || result.message?.includes('Authentication required')
         ? 401
         : result.message === 'Insufficient permissions.' || result.message?.includes('privileges required')
           ? 403
@@ -225,9 +286,12 @@ export async function handleCmsRequest(request: Request): Promise<Response> {
       statusCode,
     });
 
+    const responseHeaders = getCorsHeaders(request);
+    responseHeaders.set('content-type', 'application/json');
+
     return new Response(JSON.stringify(result), {
       status: statusCode,
-      headers: { 'content-type': 'application/json' },
+      headers: responseHeaders,
     });
   } catch (error) {
     logger.error('cms.error', {
@@ -237,6 +301,9 @@ export async function handleCmsRequest(request: Request): Promise<Response> {
       meta: { error: error instanceof Error ? error.message : 'Unknown error' },
     });
 
+    const errHeaders = getCorsHeaders(request);
+    errHeaders.set('content-type', 'application/json');
+
     return new Response(
       JSON.stringify({
         success: false,
@@ -244,7 +311,7 @@ export async function handleCmsRequest(request: Request): Promise<Response> {
       }),
       {
         status: 500,
-        headers: { 'content-type': 'application/json' },
+        headers: errHeaders,
       }
     );
   }
@@ -253,8 +320,30 @@ export async function handleCmsRequest(request: Request): Promise<Response> {
 export default async function handler(req: any, res?: any) {
   if (res && typeof res.status === 'function') {
     try {
-      const url = `${req.protocol || 'https'}://${req.headers?.host || 'localhost'}${req.url || '/api/cms'}`;
-      
+      const originalPath =
+        req.headers?.['x-matched-path'] ||
+        req.headers?.['x-invoke-path'] ||
+        req.headers?.['x-forwarded-uri'] ||
+        req.url ||
+        '/api/cms';
+      const host = req.headers?.['x-forwarded-host'] || req.headers?.host || 'localhost';
+      const proto = req.headers?.['x-forwarded-proto'] || req.protocol || 'https';
+
+      let fullUrlPath = originalPath;
+      if (req.query && typeof req.query === 'object' && Object.keys(req.query).length > 0 && !fullUrlPath.includes('?')) {
+        const params = new URLSearchParams();
+        for (const [k, v] of Object.entries(req.query)) {
+          if (v !== undefined) {
+            params.set(k, Array.isArray(v) ? v.join(',') : String(v));
+          }
+        }
+        const qs = params.toString();
+        if (qs) {
+          fullUrlPath = `${fullUrlPath}?${qs}`;
+        }
+      }
+      const url = `${proto}://${host}${fullUrlPath}`;
+
       const headers = new Headers();
       if (req.headers && typeof req.headers === 'object') {
         for (const [key, value] of Object.entries(req.headers)) {

@@ -18,7 +18,7 @@
     "build:cf": "npm run build",
     "preview:cf": "npx wrangler dev",
     "deploy:cf": "npx wrangler deploy",
-    "test": "node --import tsx --test tests/phase3/phase3.test.ts tests/production-regression.test.ts tests/cms-functionality.test.ts tests/cloudflare-worker.test.ts tests/email-workflow.test.ts"
+    "test": "node --import tsx --test tests/phase3/phase3.test.ts tests/production-regression.test.ts tests/cms-functionality.test.ts tests/cloudflare-worker.test.ts tests/email-workflow.test.ts tests/login-auth-flow.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

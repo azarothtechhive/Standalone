@@ -1,4 +1,4 @@
-﻿// src/pages/admin/AdminLogin.tsx
+// src/pages/admin/AdminLogin.tsx
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -26,6 +26,17 @@ export const AdminLogin: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const reason = searchParams.get('reason');
+    if (reason === 'session_expired') {
+      setInfoMessage('Your CMS session has expired due to inactivity. Please log in again.');
+    } else if (reason === 'logged_out') {
+      setInfoMessage('You have been logged out successfully.');
+    }
+  }, [location.search]);
 
   // If already logged in, redirect to admin dashboard
   React.useEffect(() => {
@@ -132,6 +143,27 @@ export const AdminLogin: React.FC = () => {
             Azaroth Content Portal
           </h1>
         </div>
+
+        {/* Informational / Session Expired Alert */}
+        {infoMessage && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              backgroundColor: "#FEF3C7",
+              border: "1px solid #FDE68A",
+              borderRadius: "8px",
+              padding: "0.75rem 1rem",
+              color: "#92400E",
+              fontSize: "0.875rem",
+              marginBottom: "1.5rem",
+            }}
+          >
+            <AlertCircle size={18} style={{ flexShrink: 0 }} />
+            <span>{infoMessage}</span>
+          </div>
+        )}
 
         {/* Error Alert */}
         {errorMessage && (

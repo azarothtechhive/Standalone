@@ -7,12 +7,21 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const nativeFetch = globalThis.fetch.bind(globalThis);
 if (!(globalThis as typeof globalThis & { __azarothFetchPatched?: boolean }).__azarothFetchPatched) {
   (globalThis as typeof globalThis & { __azarothFetchPatched?: boolean }).__azarothFetchPatched = true;
-  globalThis.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const mergedInit: RequestInit = {
       ...(init ?? {}),
       credentials: init?.credentials ?? 'include',
     };
-    return nativeFetch(input, mergedInit);
+    const res = await nativeFetch(input, mergedInit);
+    // If an authenticated API call fails with 401, trigger session expiration
+    if (res.status === 401 && typeof window !== 'undefined') {
+      const urlStr = typeof input === 'string' ? input : input instanceof URL ? input.toString() : (input as Request).url;
+      if (urlStr.includes('/api/cms') || urlStr.includes('/api/auth/')) {
+        authService.clearSession();
+        window.dispatchEvent(new CustomEvent('auth:session_expired'));
+      }
+    }
+    return res;
   }) as typeof fetch;
 }
 

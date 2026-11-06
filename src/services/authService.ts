@@ -67,6 +67,7 @@ class AuthService {
 
   setSession(token: string | null | undefined, user: AdminUser): void {
     this.userCache = user;
+    const now = Date.now().toString();
     if (token) {
       this.tokenCache = token;
       try {
@@ -78,6 +79,8 @@ class AuthService {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.setItem('azaroth_admin_user', JSON.stringify(user));
+        window.localStorage.setItem('azaroth_session_login_time', now);
+        window.localStorage.setItem('azaroth_last_activity', now);
       }
     } catch {}
   }
@@ -89,11 +92,36 @@ class AuthService {
       if (typeof window !== 'undefined' && window.localStorage) {
         window.localStorage.removeItem('azaroth_session_token');
         window.localStorage.removeItem('azaroth_admin_user');
+        window.localStorage.removeItem('azaroth_session_login_time');
+        window.localStorage.removeItem('azaroth_last_activity');
       }
     } catch {}
   }
 
-  async login(email: string, password: string, totpCode?: string, recoveryCode?: string): Promise<AuthResponse> {
+  recordActivity(): void {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        window.localStorage.setItem('azaroth_last_activity', Date.now().toString());
+      }
+    } catch {}
+  }
+
+  getLastActivity(): number {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const ts = window.localStorage.getItem('azaroth_last_activity');
+        if (ts) return parseInt(ts, 10);
+      }
+    } catch {}
+    return Date.now();
+  }
+
+  isIdleTimeout(maxIdleMinutes: number = 30): boolean {
+    const last = this.getLastActivity();
+    return Date.now() - last > maxIdleMinutes * 60 * 1000;
+  }
+
+  async login(email: string, password: string): Promise<AuthResponse> {
     const cleanEmail = email.trim().toLowerCase();
 
     try {
@@ -101,7 +129,7 @@ class AuthService {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cleanEmail, password, totpCode, recoveryCode }),
+        body: JSON.stringify({ email: cleanEmail, password }),
       });
 
       const data: AuthResponse = await response.json().catch(() => ({
@@ -142,13 +170,22 @@ class AuthService {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
+      const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timeoutId = controller ? setTimeout(() => controller.abort(), 8000) : null;
+
       const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
         credentials: 'include',
         headers,
+        signal: controller?.signal,
+      }).finally(() => {
+        if (timeoutId) clearTimeout(timeoutId);
       });
 
       if (!response.ok) {
         this.clearSession();
+        if (response.status === 401 && typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('auth:session_expired'));
+        }
         return null;
       }
 
@@ -160,6 +197,11 @@ class AuthService {
       this.clearSession();
       return null;
     } catch {
+      // If network error, allow local cached session to remain active temporarily
+      const cached = this.getUser();
+      if (cached && !this.isIdleTimeout()) {
+        return cached;
+      }
       return null;
     }
   }

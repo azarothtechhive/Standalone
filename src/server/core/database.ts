@@ -23,6 +23,8 @@ export function tbl(tableName: string): string {
 const DEFAULT_DATABASE_URL =
   'postgresql://neondb_owner:npg_Ql5db3fxCeop@ep-lingering-salad-b5imxpwy-pooler.c-7.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require';
 
+const neonClientCache = new Map<string, any>();
+
 /**
  * Get a database connection for the specified role
  * @param type - The type of connection (migrator, app, or public_ro)
@@ -49,7 +51,15 @@ export function getDatabaseConnection(type: ConnectionType = 'app') {
     url = DEFAULT_DATABASE_URL;
   }
   
-  return neon(url);
+  url = url.trim().replace(/^["']|["']$/g, '');
+
+  let client = neonClientCache.get(url);
+  if (!client) {
+    client = neon(url);
+    neonClientCache.set(url, client);
+  }
+  
+  return client;
 }
 
 /**

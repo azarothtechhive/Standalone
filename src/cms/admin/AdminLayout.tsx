@@ -36,7 +36,7 @@ import { CustomCursor } from "../../components/common/CustomCursor";
 import { authService } from "../../services/authService";
 
 export const AdminLayout: React.FC = () => {
-  const { user, logout, isSuperAdmin, refreshProfile } = useAdminAuth();
+  const { user, logout, isSuperAdmin, refreshProfile, isExpiringSoon, remainingSeconds, extendSession } = useAdminAuth();
   const { isLive, refreshContent, settings } = useCMS();
   const navigate = useNavigate();
 
@@ -979,6 +979,50 @@ export const AdminLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      {/* Session Inactivity Timeout Warning Banner */}
+      {isExpiringSoon && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "1.5rem",
+            right: "1.5rem",
+            zIndex: 9999,
+            backgroundColor: "#78350F",
+            color: "#FEF3C7",
+            padding: "1rem 1.5rem",
+            borderRadius: "12px",
+            boxShadow: "0 10px 25px -5px rgba(0,0,0,0.3)",
+            display: "flex",
+            alignItems: "center",
+            gap: "1rem",
+            border: "1px solid #D97706",
+            fontFamily: "Inter, sans-serif",
+          }}
+        >
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "0.875rem" }}>CMS Session Expiring</div>
+            <div style={{ fontSize: "0.75rem", opacity: 0.9 }}>
+              Inactive session will expire in {remainingSeconds}s.
+            </div>
+          </div>
+          <button
+            onClick={extendSession}
+            style={{
+              backgroundColor: "#D97706",
+              color: "#FFFFFF",
+              border: "none",
+              borderRadius: "6px",
+              padding: "0.5rem 1rem",
+              fontWeight: 600,
+              fontSize: "0.8125rem",
+              cursor: "pointer",
+            }}
+          >
+            Stay Logged In
+          </button>
+        </div>
+      )}
 
       {/* User Profile & Account Details Modal */}
       {showProfileModal && (

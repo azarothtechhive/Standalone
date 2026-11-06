@@ -44,7 +44,7 @@ interface ExecutionContext {
 function syncEnvironmentVariables(env: Env): void {
   if (env && typeof env === 'object') {
     for (const [key, val] of Object.entries(env)) {
-      if (typeof val === 'string' && val !== '' && !process.env[key]) {
+      if (typeof val === 'string' && val !== '') {
         process.env[key] = val;
       }
     }
@@ -64,7 +64,9 @@ function applySecurityHeaders(response: Response): Response {
     }
   }
 
-  return new Response(response.body, {
+  const nullBody = [204, 205, 304].includes(response.status) ? null : response.body;
+
+  return new Response(nullBody, {
     status: response.status,
     statusText: response.statusText,
     headers,

@@ -15,6 +15,9 @@ import * as totpService from './totpService';
 // In-memory rate limiting map (transient IP security counter)
 const loginRateLimits = new Map<string, { count: number; resetAt: number }>();
 
+// In-memory flag to ensure bootstrap accounts are checked at most once per process lifetime
+let initialAdminSynced = false;
+
 /**
  * Get session by token directly from database
  */
@@ -46,104 +49,36 @@ export function canAccessCrmRole(role?: string | null): boolean {
 }
 
 /**
- * Create initial admin and bootstrap accounts from environment variables if not present in database
- * Ensures all team and admin credentials in staging.accounts are fully in sync with scrypt hashes
- * Also removes legacy MFA flags from existing sessions and user records
+ * Ensure initial administrator account exists in database.
+ * Optimized for serverless: runs at most once in memory per process,
+ * performs an indexed lookup, and never re-hashes or runs bulk updates on login.
  */
 async function ensureInitialAdminAccount() {
-  try {
-    await executeQuery(`UPDATE ${tbl('sessions')} SET mfa_verified = true WHERE mfa_verified = false`);
-    await executeQuery(
-      `UPDATE ${tbl('users')} SET force_mfa_enrollment = false, two_factor_enabled = false WHERE force_mfa_enrollment = true OR two_factor_enabled = true`
-    );
-  } catch {
-    // Non-fatal if offline or before migrations
-  }
+  if (initialAdminSynced) return;
 
-  const bootstrapList = [
-    {
-      id: 'usr-admin-env',
-      email: (process.env.INITIAL_ADMIN_EMAIL || 'admin@azaroth.tech').trim().toLowerCase(),
-      password: process.env.INITIAL_ADMIN_PASSWORD || 'StagingAdminPassword2026!',
-      name: process.env.INITIAL_ADMIN_NAME || (process.env.INITIAL_ADMIN_EMAIL ? process.env.INITIAL_ADMIN_EMAIL.split('@')[0] : 'admin'),
-      role: 'SUPER_ADMIN' as const,
-    },
-    {
+  try {
+    const adminEmail = 'admin@azaroth-techhive.com';
+    const existing = await accountRepository.findAccountByEmail(adminEmail);
+    if (existing) {
+      initialAdminSynced = true;
+      return;
+    }
+
+    // Only create initial admin if completely missing
+    await accountRepository.createAccount({
       id: 'usr_seed_initial_admin',
-      email: 'admin@azaroth-techhive.com',
+      email: adminEmail,
       password: process.env.BOOTSTRAP_ADMIN_PASSWORD || 'Admin@123',
       name: 'Alexander Vance',
-      role: 'SUPER_ADMIN' as const,
-    },
-    {
-      id: 'usr-editor-002',
-      email: 'editor@azaroth-techhive.com',
-      password: process.env.BOOTSTRAP_EDITOR_PASSWORD || 'EditorUser2026!',
-      name: 'Sophia Chen',
-      role: 'CONTENT_EDITOR' as const,
-    },
-    {
-      id: 'usr-sales-003',
-      email: 'sales@azaroth-techhive.com',
-      password: process.env.BOOTSTRAP_SALES_PASSWORD || 'SalesUser2026!',
-      name: 'Marcus Sterling',
-      role: 'SALES_USER' as const,
-    },
-    {
-      id: 'usr-admin-004',
-      email: 'idrees@azaroth-techhive.com',
-      password: process.env.BOOTSTRAP_IDREES_PASSWORD || 'Idrees@azaroth123',
-      name: 'Idrees',
-      role: 'SUPER_ADMIN' as const,
-    },
-    {
-      id: 'usr-admin-005',
-      email: 'yasrahgroup@gmail.com',
-      password: process.env.BOOTSTRAP_YASRAH_PASSWORD || 'Yasrah@azaroth123',
-      name: 'Yasrah Group',
-      role: 'SUPER_ADMIN' as const,
-    },
-  ];
-
-  for (const item of bootstrapList) {
-    if (!item.email || !item.password) continue;
-    try {
-      const existing = await accountRepository.findAccountByEmail(item.email);
-      if (!existing) {
-        await accountRepository.createAccount({
-          id: item.id,
-          email: item.email,
-          name: item.name,
-          role: item.role as any,
-          password: item.password,
-        });
-        logger.info('auth_service.bootstrap_account_created', { meta: { email: item.email, role: item.role } });
-      } else {
-        if (existing.name === 'Principal System Administrator') {
-          try {
-            await executeQuery(
-              `UPDATE ${tbl('users')} SET name = $1 WHERE id = $2`,
-              [item.name, existing.id]
-            );
-          } catch {
-            // Non-fatal if DB offline
-          }
-        }
-        // Verify if account has a password record in accounts table; if missing or invalid, sync it
-        const accRecord = await executeQueryOne<{ password_hash: string }>(
-          `SELECT password_hash FROM ${tbl('accounts')} WHERE user_id = $1 LIMIT 1`,
-          [existing.id]
-        );
-        if (!accRecord || !accRecord.password_hash || !accRecord.password_hash.includes(':') || item.email === 'admin@azaroth-techhive.com') {
-          await accountRepository.updatePassword(existing.id, item.password);
-          logger.info('auth_service.bootstrap_account_password_synced', { meta: { email: item.email } });
-        }
-      }
-    } catch (error) {
-      logger.warn('auth_service.bootstrap_account_sync_failed', {
-        meta: { email: item.email, error: error instanceof Error ? error.message : 'Unknown error' },
-      });
-    }
+      role: 'SUPER_ADMIN',
+    });
+    initialAdminSynced = true;
+    logger.info('auth_service.bootstrap_admin_created', { meta: { email: adminEmail } });
+  } catch (error) {
+    // If DB is temporarily unreachable during cold-start check, allow login flow to attempt direct auth
+    logger.warn('auth_service.bootstrap_check_deferred', {
+      meta: { error: error instanceof Error ? error.message : 'Unknown error' },
+    });
   }
 }
 
