@@ -1,32 +1,41 @@
 # Azaroth Tech-Hive Deployment Guide
 
+## Deployment Architecture
+
+This project is split into two separate Vercel deployments to work around the Hobby plan's 12-serverless-function limit:
+
+- **Public Site** (`azaroth-tech-hive.vercel.app`): Public-facing marketing website with 3-4 functions
+- **CMS** (`azaroth-tech-hive-cms.vercel.app`): Admin dashboard with all remaining functions
+
+Both deployments share the same Neon PostgreSQL database and Cloudflare R2 buckets for data consistency.
+
 ## Prerequisites
 
 Before deploying, ensure you have:
 
-1. **Vercel Account** - Free or Pro tier
-2. **Neon PostgreSQL** - Database hosting
-3. **Cloudflare R2** - Object storage (for media assets)
+1. **Vercel Account** - Free Hobby tier (two projects)
+2. **Neon PostgreSQL** - Database hosting (shared between deployments)
+3. **Cloudflare R2** - Object storage (shared between deployments)
 4. **Git Repository** - Vercel connected to your Git provider
 
 ## Environment Variables
 
-### Required for Production
+### CMS Deployment Variables (azaroth-tech-hive-cms.vercel.app)
 
 ```bash
-# Database (Neon PostgreSQL)
+# Database (Neon PostgreSQL) - Full Access
 DATABASE_URL_MIGRATOR=postgres://user:password@ep-xxx.aws.neon.tech/azaroth_prod?sslmode=require
 DATABASE_URL_APP=postgres://user:password@ep-xxx.aws.neon.tech/azaroth_prod?sslmode=require
 DATABASE_URL_PUBLIC_RO=postgres://readonly:password@ep-xxx.aws.neon.tech/azaroth_prod?sslmode=require
 
 # Authentication
 BETTER_AUTH_SECRET=<random-32-char-string>
-BETTER_AUTH_URL=https://your-domain.vercel.app
+BETTER_AUTH_URL=https://azaroth-tech-hive-cms.vercel.app
 INITIAL_ADMIN_EMAIL=admin@azaroth.tech
 INITIAL_ADMIN_PASSWORD=<strong-password>
 MFA_ENCRYPTION_KEY=<random-32-char-string>
 
-# Cloudflare R2 Storage
+# Cloudflare R2 Storage - Full Access
 R2_ACCOUNT_ID=your-cloudflare-account-id
 R2_S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
 R2_ACCESS_KEY_ID=your-r2-access-key-id
@@ -40,7 +49,8 @@ HEALTH_READY_SECRET=<random-secret-for-health-checks>
 CRON_SECRET=<random-secret-for-cron-jobs>
 
 # Site Configuration
-SITE_URL=https://your-domain.vercel.app
+SITE_URL=https://azaroth-tech-hive-cms.vercel.app
+PUBLIC_SITE_URL=https://azaroth-tech-hive.vercel.app
 
 # Email (Optional - for notifications)
 RESEND_API_KEY=re_<your-resend-api-key>
@@ -48,23 +58,47 @@ NOTIFY_EMAIL=admin@azaroth.tech
 
 # Error Tracking (Optional)
 SENTRY_DSN=https://<your-sentry-dsn>@sentry.io/<project-id>
+```
 
-# Vercel Integration
-VERCEL_REVALIDATE_TOKEN=<random-token-for-cache-revalidation>
+### Public Site Deployment Variables (azaroth-tech-hive.vercel.app)
+
+```bash
+# Database (Neon PostgreSQL) - Read-Only Access
+DATABASE_URL_PUBLIC_RO=postgres://readonly:password@ep-xxx.aws.neon.tech/azaroth_prod?sslmode=require
+
+# Cloudflare R2 Storage - Read-Only Access
+R2_ACCOUNT_ID=your-cloudflare-account-id
+R2_S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
+R2_ACCESS_KEY_ID=your-r2-access-key-id
+R2_SECRET_ACCESS_KEY=your-r2-secret-access-key
+R2_PUBLIC_BUCKET=azaroth-public-media
+R2_PUBLIC_BASE_URL=https://pub-<bucket-id>.r2.dev
+
+# CMS API URL (for fetching content)
+CMS_API_URL=https://azaroth-tech-hive-cms.vercel.app
+
+# Site Configuration
+SITE_URL=https://azaroth-tech-hive.vercel.app
+
+# Health & Monitoring
+HEALTH_READY_SECRET=<random-secret-for-health-checks>
 ```
 
 ### Required for Staging
 
-Same as production, but with staging-specific values:
+Same as production, but with staging-specific URLs and database names:
 
 ```bash
-DATABASE_URL_MIGRATOR=postgres://user:password@ep-xxx.aws.neon.tech/azaroth_staging?sslmode=require
+# CMS Staging
+BETTER_AUTH_URL=https://azaroth-tech-hive-cms-staging.vercel.app
+SITE_URL=https://azaroth-tech-hive-cms-staging.vercel.app
+PUBLIC_SITE_URL=https://azaroth-tech-hive-staging.vercel.app
 DATABASE_URL_APP=postgres://user:password@ep-xxx.aws.neon.tech/azaroth_staging?sslmode=require
+
+# Public Site Staging
+CMS_API_URL=https://azaroth-tech-hive-cms-staging.vercel.app
+SITE_URL=https://azaroth-tech-hive-staging.vercel.app
 DATABASE_URL_PUBLIC_RO=postgres://readonly:password@ep-xxx.aws.neon.tech/azaroth_staging?sslmode=require
-BETTER_AUTH_URL=https://your-staging-domain.vercel.app
-SITE_URL=https://your-staging-domain.vercel.app
-R2_PRIVATE_BUCKET=azaroth-staging-private-media
-R2_PUBLIC_BUCKET=azaroth-staging-public-media
 ```
 
 ## Deployment Steps
@@ -76,7 +110,7 @@ R2_PUBLIC_BUCKET=azaroth-staging-public-media
    - `azaroth_prod` (main database)
    - Ensure migration role has CREATE/DROP privileges
 3. Copy connection strings for each role
-4. Add to Vercel environment variables
+4. Add to both Vercel projects' environment variables
 
 ### 2. Configure Cloudflare R2
 
@@ -86,9 +120,11 @@ R2_PUBLIC_BUCKET=azaroth-staging-public-media
    - `azaroth-public-media` (for published assets)
 3. Create R2 API Token with S3-compatible access
 4. Copy Account ID, Access Key ID, Secret Access Key
-5. Add to Vercel environment variables
+5. Add to both Vercel projects' environment variables
 
-### 3. Deploy to Vercel
+### 3. Deploy CMS to Vercel (First)
+
+The CMS must be deployed first since the public site depends on it for content.
 
 #### Option A: Via Vercel CLI
 
@@ -99,60 +135,83 @@ npm i -g vercel
 # Login
 vercel login
 
-# Deploy to preview
-vercel
+# Deploy CMS using vercel.cms.json
+vercel --name azaroth-tech-hive-cms --local-config vercel.cms.json
 
 # Deploy to production
-vercel --prod
+vercel --prod --name azaroth-tech-hive-cms --local-config vercel.cms.json
 ```
 
 #### Option B: Via Vercel Dashboard
 
-1. Import project from Git repository
-2. Configure build settings:
+1. Create new project: `azaroth-tech-hive-cms`
+2. Import from Git repository
+3. Configure build settings:
    - Framework: Vite
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-3. Add environment variables in project settings
-4. Deploy
+   - Build Command: `npm run build:cms`
+   - Output Directory: `dist-cms`
+4. Add CMS environment variables (see above)
+5. Deploy
 
-### 4. Run Database Migrations
+### 4. Run Database Migrations on CMS
 
-After first deployment, run migrations:
+After CMS deployment, run migrations:
 
 ```bash
 # Via Vercel CLI
-vercel env pull .env.local
+vercel env pull .env.local --scope azaroth-tech-hive-cms
 npm run db:migrate
-vercel env push .env.local
-
-# Or via Vercel Dashboard:
-# Set DATABASE_URL_MIGRATOR in environment variables
-# Then redeploy - migrations run automatically on deploy
 ```
+
+Or set `DATABASE_URL_MIGRATOR` in CMS environment variables and redeploy.
 
 ### 5. Create Initial Admin Account
 
-The first admin account is created automatically on first startup if it doesn't exist, using:
+The first admin account is created automatically on first CMS startup if it doesn't exist, using:
 - `INITIAL_ADMIN_EMAIL`
 - `INITIAL_ADMIN_PASSWORD`
 
-Set these before first deployment.
+Set these in CMS environment variables before first deployment.
 
 ### 6. Configure MFA
 
-After first login:
-1. Navigate to `/admin/login`
+After first login to CMS:
+1. Navigate to `https://azaroth-tech-hive-cms.vercel.app/admin/login`
 2. Login with initial admin credentials
 3. Complete MFA setup (TOTP app + backup codes)
 4. MFA is enforced for all admin operations
 
-## Post-Deployment Verification
+### 7. Deploy Public Site to Vercel (Second)
 
-### 1. Health Check
+After CMS is deployed and running, deploy the public site.
+
+#### Option A: Via Vercel CLI
 
 ```bash
-curl https://your-domain.vercel.app/api/health
+# Deploy public site using vercel.public.json
+vercel --name azaroth-tech-hive --local-config vercel.public.json
+
+# Deploy to production
+vercel --prod --name azaroth-tech-hive --local-config vercel.public.json
+```
+
+#### Option B: Via Vercel Dashboard
+
+1. Create new project: `azaroth-tech-hive`
+2. Import from Git repository (same repo as CMS)
+3. Configure build settings:
+   - Framework: Vite
+   - Build Command: `npm run build:public`
+   - Output Directory: `dist`
+4. Add public site environment variables (see above)
+5. Deploy
+
+## Post-Deployment Verification
+
+### 1. CMS Health Check
+
+```bash
+curl https://azaroth-tech-hive-cms.vercel.app/api/health
 ```
 
 Expected response:
@@ -174,44 +233,63 @@ Expected response:
 }
 ```
 
-### 2. Readiness Check (with secret)
+### 2. Public Site Health Check
 
 ```bash
-curl -H "x-health-secret: YOUR_SECRET" \
-  https://your-domain.vercel.app/api/health?type=ready
+curl https://azaroth-tech-hive.vercel.app/api/health
 ```
 
-### 3. Test Admin Login
+### 3. Test Content API
 
-1. Navigate to `/admin/login`
+Test that the public site can fetch content from the CMS:
+
+```bash
+# Fetch all published content
+curl https://azaroth-tech-hive-cms.vercel.app/api/content?type=all
+
+# Fetch specific page
+curl https://azaroth-tech-hive-cms.vercel.app/api/content?type=page&slug=about
+
+# Fetch products
+curl https://azaroth-tech-hive-cms.vercel.app/api/content?type=products
+```
+
+### 4. Test Admin Login
+
+1. Navigate to `https://azaroth-tech-hive-cms.vercel.app/admin/login`
 2. Login with initial admin credentials
 3. Complete MFA verification
 4. Verify dashboard loads
 
-### 4. Test Contact Form
+### 5. Test Contact Form (Public Site)
 
-1. Navigate to `/connect-with-us`
+1. Navigate to `https://azaroth-tech-hive.vercel.app/connect-with-us`
 2. Submit test form
 3. Verify submission succeeds (check database or logs)
 
-### 5. Test Media Upload
+### 6. Test Media Upload (CMS)
 
-1. Login to admin
+1. Login to CMS admin
 2. Navigate to Media Manager
 3. Upload test image
 4. Verify upload succeeds and appears in list
+
+### 7. Test Admin Redirect
+
+Navigate to `https://azaroth-tech-hive.vercel.app/admin` - should redirect to CMS at `https://azaroth-tech-hive-cms.vercel.app/admin`
 
 ## Monitoring
 
 ### Logs
 
-- Vercel Dashboard → Logs
+- **CMS**: Vercel Dashboard → azaroth-tech-hive-cms → Logs
+- **Public Site**: Vercel Dashboard → azaroth-tech-hive → Logs
 - Filter by API routes: `/api/*`
 - Monitor for errors in authentication, database, R2
 
 ### Alerts
 
-Configure Vercel alerts for:
+Configure Vercel alerts for both projects:
 - HTTP 5xx errors
 - Response time > 500ms
 - Edge function errors
