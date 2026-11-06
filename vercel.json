@@ -145,6 +145,18 @@
   ],
   "rewrites": [
     {
+      "source": "/api/auth/:path*",
+      "destination": "/api/auth/[...path]"
+    },
+    {
+      "source": "/api/cms/:path*",
+      "destination": "/api/cms/[...path]"
+    },
+    {
+      "source": "/api/media/file/:path*",
+      "destination": "/api/media/file/[id]"
+    },
+    {
       "source": "/((?!api/|assets/|images/|favicon\\.ico|Favicon\\.png|Logo\\.png|robots\\.txt|sitemap\\.xml).*)",
       "destination": "/index.html"
     }

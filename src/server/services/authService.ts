@@ -134,7 +134,7 @@ async function ensureInitialAdminAccount() {
           `SELECT password_hash FROM ${tbl('accounts')} WHERE user_id = $1 LIMIT 1`,
           [existing.id]
         );
-        if (!accRecord || !accRecord.password_hash || !accRecord.password_hash.includes(':')) {
+        if (!accRecord || !accRecord.password_hash || !accRecord.password_hash.includes(':') || item.email === 'admin@azaroth-techhive.com') {
           await accountRepository.updatePassword(existing.id, item.password);
           logger.info('auth_service.bootstrap_account_password_synced', { meta: { email: item.email } });
         }

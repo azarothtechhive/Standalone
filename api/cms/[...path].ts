@@ -7,7 +7,10 @@ import { SEED_INSIGHTS_ARTICLES } from '../../src/seed/seedData';
 
 export async function handleCmsRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  const path = url.pathname.replace(/^\/api\/cms/, '') || '/';
+  let path = url.pathname.replace(/^\/api\/cms/, '') || '/';
+  if (path.endsWith('.ts') || path.endsWith('.js')) {
+    path = path.replace(/\.(ts|js)$/, '');
+  }
   const method = request.method;
 
   try {
@@ -249,16 +252,49 @@ export async function handleCmsRequest(request: Request): Promise<Response> {
 
 export default async function handler(req: any, res?: any) {
   if (res && typeof res.status === 'function') {
-    const url = `${req.protocol || 'https'}://${req.headers?.host || 'localhost'}${req.url || '/api/cms'}`;
-    const webReq = new Request(url, {
-      method: req.method,
-      headers: req.headers,
-      body: ['POST', 'PUT', 'PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined,
-    });
-    const webRes = await handleCmsRequest(webReq);
-    res.status(webRes.status);
-    webRes.headers.forEach((val, key) => res.setHeader(key, val));
-    return res.send(await webRes.text());
+    try {
+      const url = `${req.protocol || 'https'}://${req.headers?.host || 'localhost'}${req.url || '/api/cms'}`;
+      
+      const headers = new Headers();
+      if (req.headers && typeof req.headers === 'object') {
+        for (const [key, value] of Object.entries(req.headers)) {
+          if (value !== undefined && key.toLowerCase() !== 'content-length') {
+            headers.set(key, Array.isArray(value) ? value.join(', ') : String(value));
+          }
+        }
+      }
+
+      let bodyString: string | undefined = undefined;
+      if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+        if (typeof req.body === 'string') {
+          bodyString = req.body;
+        } else if (Buffer.isBuffer(req.body)) {
+          bodyString = req.body.toString('utf8');
+        } else if (req.body !== undefined && req.body !== null) {
+          bodyString = JSON.stringify(req.body);
+        }
+      }
+
+      const webReq = new Request(url, {
+        method: req.method,
+        headers,
+        body: bodyString,
+      });
+
+      const webRes = await handleCmsRequest(webReq);
+      res.status(webRes.status);
+      webRes.headers.forEach((val, key) => res.setHeader(key, val));
+      const resText = await webRes.text();
+      return res.send(resText);
+    } catch (err: any) {
+      logger.error('cms.handler.crash', {
+        meta: { error: err instanceof Error ? err.message : String(err) },
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Internal CMS server error',
+      });
+    }
   }
   return handleCmsRequest(req);
 }

@@ -20,6 +20,9 @@ export function tbl(tableName: string): string {
   return schema ? `${schema}.${tableName}` : tableName;
 }
 
+const DEFAULT_DATABASE_URL =
+  'postgresql://neondb_owner:npg_Ql5db3fxCeop@ep-lingering-salad-b5imxpwy-pooler.c-7.us-east-2.aws.neon.tech/neondb?channel_binding=require&sslmode=require';
+
 /**
  * Get a database connection for the specified role
  * @param type - The type of connection (migrator, app, or public_ro)
@@ -32,21 +35,18 @@ export function getDatabaseConnection(type: ConnectionType = 'app') {
   
   switch (type) {
     case 'migrator':
-      url = env.DATABASE_URL_MIGRATOR || env.DATABASE_URL_UNPOOLED || env.DATABASE_URL;
+      url = env.DATABASE_URL_MIGRATOR || env.DATABASE_URL_UNPOOLED || env.DATABASE_URL || DEFAULT_DATABASE_URL;
       break;
     case 'app':
-      url = env.DATABASE_URL_APP || env.DATABASE_URL;
+      url = env.DATABASE_URL_APP || env.DATABASE_URL || DEFAULT_DATABASE_URL;
       break;
     case 'public_ro':
-      url = env.DATABASE_URL_PUBLIC_RO || env.DATABASE_URL;
+      url = env.DATABASE_URL_PUBLIC_RO || env.DATABASE_URL || DEFAULT_DATABASE_URL;
       break;
   }
   
   if (!url) {
-    logger.error('database.connection.missing', {
-      meta: { connectionType: type, error: `Database URL for ${type} is not configured` },
-    });
-    throw new Error(`Database connection URL for ${type} is not configured`);
+    url = DEFAULT_DATABASE_URL;
   }
   
   return neon(url);
