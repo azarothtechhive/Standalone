@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://azaroth-test.vercel.app/sitemap.xml

@@ -1,0 +1,59 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 5,
+      "url": [
+        "https://standalone-omega-one.vercel.app/",
+        "https://standalone-omega-one.vercel.app/about",
+        "https://standalone-omega-one.vercel.app/products",
+        "https://standalone-omega-one.vercel.app/products/fitness-management-platform",
+        "https://standalone-omega-one.vercel.app/products/omnichannel-commerce-platform",
+        "https://standalone-omega-one.vercel.app/products/learning-management-platform",
+        "https://standalone-omega-one.vercel.app/products/healthcare-management-system",
+        "https://standalone-omega-one.vercel.app/services",
+        "https://standalone-omega-one.vercel.app/portfolio",
+        "https://standalone-omega-one.vercel.app/technology-insights",
+        "https://standalone-omega-one.vercel.app/technology-insights/scaling-event-streaming-zero-data-loss",
+        "https://standalone-omega-one.vercel.app/technology-insights/private-enterprise-ai-rag-architectures",
+        "https://standalone-omega-one.vercel.app/technology-insights/zero-downtime-monolith-to-microservice-migration",
+        "https://standalone-omega-one.vercel.app/testimonials",
+        "https://standalone-omega-one.vercel.app/connect-with-us",
+        "https://standalone-omega-one.vercel.app/privacy-policy",
+        "https://standalone-omega-one.vercel.app/terms-of-service"
+      ],
+      "settings": {
+        "preset": "desktop",
+        "formFactor": "desktop",
+        "throttlingMethod": "simulate",
+        "throttling": {
+          "rttMs": 40,
+          "throughputKbps": 10240,
+          "cpuSlowdownMultiplier": 1,
+          "requestLatencyMs": 0,
+          "downloadThroughputKbps": 0,
+          "uploadThroughputKbps": 0
+        },
+        "screenEmulation": {
+          "mobile": false,
+          "width": 1440,
+          "height": 900,
+          "deviceScaleFactor": 1,
+          "disabled": false
+        },
+        "onlyCategories": ["performance", "accessibility", "best-practices", "seo"]
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["warn", { "minScore": 0.9, "aggregationMethod": "median" }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.1, "aggregationMethod": "median" }],
+        "largest-contentful-paint": ["warn", { "maxNumericValue": 2500, "aggregationMethod": "median" }],
+        "total-blocking-time": ["warn", { "maxNumericValue": 200, "aggregationMethod": "median" }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "./.lhci-results/desktop"
+    }
+  }
+}

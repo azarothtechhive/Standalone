@@ -1,0 +1,411 @@
+
+:root {
+  /* ============================================================
+     AZAROTH TECH-HIVE DESIGN SYSTEM
+     Premium Enterprise Identity: Plum + Cream + Antique Gold
+     ============================================================ */
+
+  /* --- 1. PRIMARY BUTTONS & GRADIENTS --- */
+  --gradient-button: linear-gradient(110deg, #49243F 0%, #8A315D 55%, #C04472 100%);
+  --gradient-button-hover: linear-gradient(110deg, #35182E 0%, #49243F 55%, #8A315D 100%);
+  --gradient-button-active: linear-gradient(110deg, #35182E 0%, #49243F 55%, #8A315D 100%);
+  --gradient-heading: linear-gradient(110deg, #49243F 0%, #8A315D 55%, #C04472 100%);
+  --gradient-primary: linear-gradient(110deg, #49243F 0%, #8A315D 55%, #C04472 100%);
+  --gradient-brand: linear-gradient(110deg, #49243F 0%, #8A315D 55%, #C04472 100%);
+  --gradient-hero: #49243F;
+
+  --color-primary-button: #49243F;
+  --color-primary-button-hover: #35182E;
+  --color-primary-button-active: #281224;
+  --color-primary-button-text: #FAF8F4;
+  --shadow-primary-button: 0 4px 14px rgba(73, 36, 63, 0.18);
+  --shadow-primary-button-lg: 0 10px 25px rgba(53, 24, 46, 0.22);
+
+  /* --- 2. LINKS & NAVIGATION --- */
+  --color-link-main: #49243F;
+  --color-link-hover: #855A27;
+  --color-link-active: #35182E;
+  --color-nav-active: #49243F;
+  --color-nav-active-bg: rgba(73, 36, 63, 0.06);
+  --color-nav-indicator: #C99B52;
+
+  /* --- 3. PAGE BACKGROUNDS & SURFACES --- */
+  --color-white: #FFFFFF;
+  --color-bg-white: #FAF8F4;
+  --color-bg-indigo-soft: #F1EBE3;
+  --color-canvas-bg: #FAF8F4;
+  --color-canvas-card: #FFFFFF;
+  --color-canvas-muted: #F7F2EB;
+  --color-canvas-subtle: #F1EBE3;
+  --color-surface-soft: #F7F2EB;
+  --color-surface-muted: #F1EBE3;
+  --color-surface-subtle: #FAF8F4;
+  --color-canvas-card-elevated: #FFFFFF;
+
+  /* Additional semantic aliases */
+  --bg: #FAF8F4;
+  --bg-alt: #F1EBE3;
+  --surface: #FFFFFF;
+  --surface-2: #F7F2EB;
+
+  /* --- 4. SUCCESS MESSAGES --- */
+  --color-success: #1F5132;
+  --color-success-hover: #174126;
+  --color-success-light: #E8F2E8;
+  --color-success-lighter: #F2F8F2;
+  --color-success-text: #1F5132;
+  --color-success-border: #B9D6BD;
+  --shadow-emerald: 0 4px 14px rgba(31, 81, 50, 0.12);
+  --shadow-emerald-lg: 0 12px 28px rgba(31, 81, 50, 0.16);
+
+  /* --- 5. GOLD ACCENTS & PREMIUM BRAND --- */
+  --color-brand-gold: #C99B52;
+  --color-brand-gold-hover: #A97B36;
+  --color-brand-gold-light: #F7EAD2;
+  --color-brand-gold-lighter: #FCF6EB;
+  --color-brand-gold-text: #7A5422;
+  --color-brand-gold-border: #E3C58E;
+  --color-brand-gold-shadow: rgba(201, 155, 82, 0.22);
+  --color-brand-gold-glow: rgba(201, 155, 82, 0.25);
+
+  --color-premium: #C99B52;
+  --color-premium-hover: #A97B36;
+  --color-premium-light: #F7EAD2;
+  --color-premium-lighter: #FCF6EB;
+  --color-premium-text: #7A5422;
+  --color-premium-border: #E3C58E;
+  --shadow-gold: 0 4px 14px rgba(201, 155, 82, 0.18);
+  --shadow-gold-lg: 0 12px 28px rgba(201, 155, 82, 0.24);
+
+  /* --- 6. ALERTS & DANGER --- */
+  --color-alert: #A3332B;
+  --color-alert-hover: #85251F;
+  --color-alert-light: #FBECEB;
+  --color-alert-lighter: #FFF5F4;
+  --color-alert-text: #7D231D;
+  --color-alert-border: #E7B4AE;
+  --color-danger: #A3332B;
+  --color-danger-light: #FBECEB;
+  --color-danger-text: #7D231D;
+  --color-danger-border: #E7B4AE;
+  --shadow-rose: 0 4px 14px rgba(125, 35, 29, 0.12);
+
+  /* --- 7. WARNINGS --- */
+  --color-warning: #6D4410;
+  --color-warning-hover: #55350C;
+  --color-warning-light: #FDF1DF;
+  --color-warning-lighter: #FFF8EC;
+  --color-warning-text: #6D4410;
+  --color-warning-border: #E2C08C;
+  --shadow-amber: 0 4px 14px rgba(109, 68, 16, 0.12);
+
+  /* --- 8. TYPOGRAPHY --- */
+  --color-text-primary: #2B232D;
+  --color-text-secondary: #5D545E;
+  --color-text-tertiary: #746B75;
+  --color-text-muted: #5D545E;
+  --color-text-inverse: #FAF8F4;
+  --color-text-on-primary: #FAF8F4;
+
+  --ink: #2B232D;
+  --muted: #5D545E;
+
+  /* Hero text */
+  --color-hero-text: #FAF8F4;
+  --color-hero-highlight: #F0D6A7;
+  --color-hero-muted: #F7F2EB;
+
+  /* --- 9. BORDERS & DIVIDERS --- */
+  --color-border: #E3DACF;
+  --color-border-subtle: #E3DACF;
+  --color-border-medium: #CFC2B4;
+  --color-border-strong: #A99AAB;
+
+  --line: #E3DACF;
+  --line-strong: #CFC2B4;
+
+  /* --- 10. FOOTER --- */
+  --color-footer-bg: #211A23;
+  --color-footer-text: #FAF8F4;
+  --color-footer-heading: #F0D6A7;
+  --color-footer-border: #493B49;
+
+  /* --- 11. PRIMARY SYSTEM ALIASES --- */
+  --color-primary: #49243F;
+  --color-primary-hover: #35182E;
+  --color-primary-light: rgba(73, 36, 63, 0.08);
+  --color-primary-lighter: rgba(73, 36, 63, 0.04);
+  --color-primary-text: #49243F;
+  --color-primary-border: rgba(73, 36, 63, 0.25);
+  --color-primary-glow: rgba(73, 36, 63, 0.20);
+  --color-primary-shadow: rgba(73, 36, 63, 0.18);
+
+  /* Legacy emerald tokens mapped to plum */
+  --color-brand-emerald: #49243F;
+  --color-brand-emerald-hover: #35182E;
+  --color-brand-emerald-light: rgba(73, 36, 63, 0.08);
+  --color-brand-emerald-lighter: rgba(73, 36, 63, 0.04);
+  --color-brand-emerald-text: #49243F;
+  --color-brand-emerald-border: rgba(73, 36, 63, 0.25);
+  --color-brand-emerald-shadow: rgba(73, 36, 63, 0.15);
+  --color-brand-emerald-glow: rgba(73, 36, 63, 0.20);
+
+  /* Legacy violet tokens mapped to plum */
+  --color-brand-violet: #49243F;
+  --color-brand-violet-hover: #35182E;
+  --color-brand-violet-light: rgba(73, 36, 63, 0.08);
+  --color-brand-violet-lighter: rgba(73, 36, 63, 0.04);
+  --color-brand-violet-text: #49243F;
+  --color-brand-violet-border: rgba(73, 36, 63, 0.25);
+  --color-brand-violet-shadow: rgba(73, 36, 63, 0.15);
+  --color-brand-violet-glow: rgba(73, 36, 63, 0.20);
+
+  /* Legacy orange tokens mapped to gold */
+  --color-brand-orange: #C99B52;
+  --color-brand-orange-hover: #A97B36;
+  --color-brand-orange-light: #F7EAD2;
+  --color-brand-orange-lighter: #FCF6EB;
+  --color-brand-orange-text: #7A5422;
+  --color-brand-orange-border: #E3C58E;
+  --color-brand-orange-shadow: rgba(201, 155, 82, 0.15);
+  --color-brand-orange-glow: rgba(201, 155, 82, 0.20);
+
+  /* Legacy magenta tokens mapped to plum */
+  --color-brand-magenta: #49243F;
+  --color-brand-magenta-hover: #35182E;
+  --color-brand-magenta-light: rgba(73, 36, 63, 0.08);
+  --color-brand-magenta-lighter: rgba(73, 36, 63, 0.04);
+  --color-brand-magenta-text: #49243F;
+  --color-brand-magenta-border: rgba(73, 36, 63, 0.25);
+  --color-brand-magenta-shadow: rgba(73, 36, 63, 0.15);
+  --color-brand-magenta-glow: rgba(73, 36, 63, 0.20);
+
+  /* Legacy colour aliases */
+  --color-primary-green: #49243F;
+  --color-primary-maroon: #49243F;
+  --color-dark-forest: #35182E;
+  --color-dark-maroon: #281224;
+  --color-gold-from: #49243F;
+  --color-gold-to: #C99B52;
+
+  /* Secondary and accent aliases */
+  --color-secondary: var(--color-brand-gold);
+  --color-secondary-hover: var(--color-brand-gold-hover);
+  --color-secondary-light: var(--color-brand-gold-light);
+  --color-secondary-lighter: var(--color-brand-gold-lighter);
+  --color-secondary-text: var(--color-brand-gold-text);
+  --color-secondary-border: var(--color-brand-gold-border);
+  --color-secondary-glow: var(--color-brand-gold-glow);
+  --color-secondary-shadow: var(--color-brand-gold-shadow);
+
+  --color-accent: #C99B52;
+  --color-accent-hover: #A97B36;
+  --color-accent-light: #F7EAD2;
+  --color-accent-lighter: #FCF6EB;
+  --color-accent-text: #7A5422;
+  --color-accent-border: #E3C58E;
+  --color-accent-glow: rgba(201, 155, 82, 0.25);
+  --color-accent-shadow: rgba(201, 155, 82, 0.18);
+
+  --color-warm: #C99B52;
+  --color-warm-hover: #A97B36;
+  --color-warm-light: #F7EAD2;
+  --color-warm-lighter: #FCF6EB;
+  --color-warm-text: #7A5422;
+  --color-warm-border: #E3C58E;
+  --color-warm-glow: rgba(201, 155, 82, 0.20);
+  --color-warm-shadow: rgba(201, 155, 82, 0.15);
+
+  --color-luxury: #49243F;
+  --color-luxury-hover: #35182E;
+  --color-luxury-light: rgba(73, 36, 63, 0.08);
+  --color-luxury-lighter: rgba(73, 36, 63, 0.04);
+  --color-luxury-text: #49243F;
+  --color-luxury-border: rgba(73, 36, 63, 0.25);
+  --color-luxury-glow: rgba(73, 36, 63, 0.20);
+  --color-luxury-shadow: rgba(73, 36, 63, 0.15);
+
+  /* --- 12. TYPOGRAPHY FONTS --- */
+  --font-sans: "DM Sans", "Segoe UI", Arial, sans-serif;
+  --font-heading: "Outfit", "DM Sans", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* --- 13. SPACING SCALE --- */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+
+  /* --- 14. BORDER RADIUS --- */
+  --radius-none: 0;
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.5rem;
+  --radius-full: 9999px;
+
+  /* --- 15. TRANSITIONS --- */
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 350ms;
+
+  /* --- 16. SHADOWS --- */
+  --shadow-xs: 0 1px 2px rgba(43, 35, 45, 0.05);
+  --shadow-sm: 0 1px 3px rgba(43, 35, 45, 0.08);
+  --shadow-md: 0 4px 10px rgba(43, 35, 45, 0.08);
+  --shadow-lg: 0 10px 24px rgba(43, 35, 45, 0.10);
+  --shadow-xl: 0 20px 35px rgba(43, 35, 45, 0.12);
+  --shadow-2xl: 0 25px 50px rgba(43, 35, 45, 0.18);
+  --shadow-card: 0 4px 20px rgba(73, 36, 63, 0.06);
+  --shadow-card-hover: 0 16px 36px rgba(73, 36, 63, 0.12);
+
+  /* --- 17. ACCESSIBILITY & FOCUS --- */
+  --color-focus: #2B232D;
+  --color-focus-on-brand: #F0D6A7;
+}
+
+
+/* Corporate refinement: lighter typography and balanced sizing */
+:root {
+  --font-body-size: 0.9375rem;
+  --font-body-line-height: 1.6;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: var(--font-body, var(--font-sans));
+  font-size: var(--font-body-size);
+  line-height: var(--font-body-line-height);
+  font-weight: 400;
+  color: var(--color-text-primary);
+  overflow-x: hidden;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: clamp(1.85rem, 3.2vw, 2.5rem);
+}
+
+h2 {
+  font-size: clamp(1.45rem, 2.4vw, 1.95rem);
+}
+
+h3 {
+  font-size: clamp(1.15rem, 1.6vw, 1.45rem);
+}
+
+p,
+li {
+  font-weight: 400;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+[role="button"] {
+  font-weight: 500;
+}
+
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 1024px) {
+  .container {
+    padding-inline: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding-inline: 1rem;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 6vw, 2.5rem);
+  }
+
+  h2 {
+    font-size: clamp(1.5rem, 5vw, 2rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding-inline: 0.75rem;
+  }
+
+  h1 {
+    font-size: clamp(1.5rem, 8vw, 2.25rem);
+  }
+
+  h2 {
+    font-size: clamp(1.25rem, 6vw, 1.75rem);
+  }
+}
+
+@media (max-width: 375px) {
+  .container {
+    padding-inline: 0.625rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

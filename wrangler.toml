@@ -1,0 +1,39 @@
+# Cloudflare Worker + Static Assets Configuration
+# https://developers.cloudflare.com/workers/wrangler/configuration/
+
+name = "azaroth-tech-hive"
+main = "src/server/worker.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static Assets (Workers + Assets architecture for Single Page Applications)
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+# Cloudflare R2 Media Storage Bucket
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "azaroth-cms-media"
+
+# Automated Nightly Session & Cache Reconcile Trigger (03:00 UTC)
+[triggers]
+crons = ["0 3 * * *"]
+
+# Public Non-Secret Production Environment Variables
+# Secret variables (DATABASE_URL, BREVO_API_KEY, CRON_SECRET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, TOTP_ENCRYPTION_KEY)
+# must be configured via `wrangler secret put <KEY>` or Cloudflare Dashboard.
+[vars]
+NODE_ENV = "production"
+PORT = "3000"
+SITE_URL = "https://azaroth-techhive.com"
+EMAIL_PROVIDER = "brevo"
+EMAIL_NOTIFICATION_RECIPIENT = "azr.faizur@gmail.com"
+EMAIL_NOTIFICATION_FALLBACK = "azaroth.business@gmail.com"
+EMAIL_FROM_ADDRESS = "support@azaroth-techhive.com"
+EMAIL_FROM_NAME = "Azaroth Tech-Hive"
+R2_BUCKET_NAME = "azaroth-cms-media"
+R2_PUBLIC_BASE_URL = "https://pub-2b99371e721647a4abcefc599b4ff7ec.r2.dev"
+R2_S3_ENDPOINT = "https://0b77626fc26857e4e11e0388e404bfbc.r2.cloudflarestorage.com"
+

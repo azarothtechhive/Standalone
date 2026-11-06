@@ -1,0 +1,151 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "crons": [
+    {
+      "path": "/api/internal/reconcile",
+      "schedule": "0 3 * * *"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/who-we-are",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/values",
+      "destination": "/about#our-values",
+      "permanent": true
+    },
+    {
+      "source": "/delivery-framework",
+      "destination": "/about#delivery-framework",
+      "permanent": true
+    },
+    {
+      "source": "/how-we-work",
+      "destination": "/delivery-framework",
+      "permanent": true
+    },
+    {
+      "source": "/service",
+      "destination": "/services",
+      "permanent": true
+    },
+    {
+      "source": "/projects",
+      "destination": "/portfolio",
+      "permanent": true
+    },
+    {
+      "source": "/insights",
+      "destination": "/technology-insights",
+      "permanent": true
+    },
+    {
+      "source": "/resource-hub",
+      "destination": "/technology-insights",
+      "permanent": true
+    },
+    {
+      "source": "/contact",
+      "destination": "/connect-with-us",
+      "permanent": true
+    },
+    {
+      "source": "/connect",
+      "destination": "/connect-with-us",
+      "permanent": true
+    },
+    {
+      "source": "/request-for-quote",
+      "destination": "/connect-with-us",
+      "permanent": true
+    },
+    {
+      "source": "/rfq",
+      "destination": "/connect-with-us",
+      "permanent": true
+    },
+    {
+      "source": "/quote",
+      "destination": "/connect-with-us",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.r2.dev; media-src 'self' https://*.r2.dev; connect-src 'self' https://*.r2.dev https://*.r2.cloudflarestorage.com; frame-src 'none'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+        }
+      ]
+    },
+    {
+      "source": "/api/admin/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "private, no-store, no-cache, must-revalidate"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
+    {
+      "source": "/admin/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "private, no-store, no-cache, must-revalidate"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow, noarchive"
+        }
+      ]
+    },
+    {
+      "source": "/api/health(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "private, no-store, no-cache, must-revalidate"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/((?!api/|assets/|images/|favicon\\.ico|Favicon\\.png|Logo\\.png|robots\\.txt|sitemap\\.xml).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

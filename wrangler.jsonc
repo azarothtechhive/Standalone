@@ -1,0 +1,39 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "azaroth-tech-hive",
+  "main": "src/server/worker.ts",
+  "compatibility_date": "2024-11-01",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "azaroth-cms-media"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "0 3 * * *"
+    ]
+  },
+  "vars": {
+    "NODE_ENV": "production",
+    "PORT": "3000",
+    "SITE_URL": "https://azaroth-techhive.com",
+    "EMAIL_PROVIDER": "brevo",
+    "EMAIL_NOTIFICATION_RECIPIENT": "azr.faizur@gmail.com",
+    "EMAIL_NOTIFICATION_FALLBACK": "azaroth.business@gmail.com",
+    "EMAIL_FROM_ADDRESS": "support@azaroth-techhive.com",
+    "EMAIL_FROM_NAME": "Azaroth Tech-Hive",
+    "R2_BUCKET_NAME": "azaroth-cms-media",
+    "R2_PUBLIC_BASE_URL": "https://pub-2b99371e721647a4abcefc599b4ff7ec.r2.dev",
+    "R2_S3_ENDPOINT": "https://0b77626fc26857e4e11e0388e404bfbc.r2.cloudflarestorage.com"
+  }
+}
+
