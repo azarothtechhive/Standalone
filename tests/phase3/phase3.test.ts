@@ -267,6 +267,17 @@ describe('Phase 3 — Scope Correction, Data Model, Observability & Portability 
       assert.ok(cspHeader.value.includes("default-src 'self'"));
       assert.ok(cspHeader.value.includes("frame-ancestors 'none'"));
       assert.ok(cspHeader.value.includes('https://images.unsplash.com'));
+
+      const deployedConfig = JSON.parse(
+        fs.readFileSync(path.resolve(process.cwd(), 'vercel.json'), 'utf8')
+      );
+      assert.equal(
+        deployedConfig.rewrites.some((rewrite: { source: string }) =>
+          /^\/api\/(auth|cms)(\/|$)/.test(rewrite.source)
+        ),
+        false,
+        'API requests must reach their explicit Vercel function routes without an overriding rewrite'
+      );
     });
   });
 
