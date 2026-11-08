@@ -31,6 +31,11 @@ export function buildVercelConfigObject() {
     buildCommand: 'npm run build',
     outputDirectory: 'dist',
     framework: 'vite',
+    functions: {
+      'api/**/*': {
+        runtime: 'nodejs20.x',
+      },
+    },
     crons: [
       {
         path: '/api/internal/reconcile',

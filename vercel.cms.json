@@ -5,7 +5,7 @@
   "outputDirectory": "dist-cms",
   "framework": "vite",
   "functions": {
-    "api-cms/**/*": {
+    "api/**/*": {
       "runtime": "nodejs20.x"
     }
   },
