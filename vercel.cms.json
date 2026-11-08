@@ -152,7 +152,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://azaroth-tech-hive-test.vercel.app"
+          "value": "https://azaroth-website-test.vercel.app"
         },
         {
           "key": "Access-Control-Allow-Methods",
